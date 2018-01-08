@@ -81,7 +81,7 @@ func (k *KdTree) insert(p Point) {
 	(*targetNode).Insert(p)
 }
 
-func (k *KdTree) NN(p Point) Point {
+func (k *KdTree) NN(p Point) []Point {
 
 	smallestDistance := k.points[0].Distance(p)
 	nn := k
@@ -105,7 +105,7 @@ func (k *KdTree) NN(p Point) Point {
 		}
 	}
 
-	return nn.points[0]
+	return nn.points
 }
 
 func (k *KdTree) nn(p Point, smallestDistance float64, nNode *KdTree) (*KdTree, float64) {

@@ -77,7 +77,12 @@ func TestKdTree_NN(t *testing.T) {
 		&point{[]float64{8, 1}},
 		&point{[]float64{9, 6}},
 	}, 0)
-	assert.EqualValues(t, &point{[]float64{5, 4}}, tree.NN(&point{[]float64{5, 5}}))
-	assert.EqualValues(t, &point{[]float64{7, 2}}, tree.NN(&point{[]float64{8, 4}}))
-	//fmt.Println(p)
+	assert.EqualValues(t, &point{[]float64{5, 4}}, tree.NN(&point{[]float64{5, 5}})[0])
+	assert.EqualValues(t, &point{[]float64{7, 2}}, tree.NN(&point{[]float64{8, 4}})[0])
+
+	// Insert another point already in there
+	tree.Insert(
+		&point{[]float64{2, 3}})
+	assert.EqualValues(t, &point{[]float64{2, 3}}, tree.NN(&point{[]float64{2, 4}})[0])
+	assert.EqualValues(t, &point{[]float64{2, 3}}, tree.NN(&point{[]float64{2, 4}})[1])
 }
