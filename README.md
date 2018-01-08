@@ -1,4 +1,4 @@
-# K-d trees in Golang
+# k-d trees in Golang
 
 This package provides a simple implementation of k-d trees in Go.
 
@@ -31,5 +31,6 @@ type Point interface {
 	String() string                             // String representation of the point
 	Distance(Point) float64                     // Distance to another point
 	PlaneDistance(val float64, dim int) float64 // Distance to an hyperplane in dimension dim
+	Equal(point Point) bool                     // Point comparison
 }
 ```

@@ -3,7 +3,6 @@ package kdtree
 import (
 	"bytes"
 	"fmt"
-	"reflect"
 	"sort"
 )
 
@@ -13,6 +12,7 @@ type Point interface {
 	String() string                             // String representation of the point
 	Distance(Point) float64                     // Distance to another point
 	PlaneDistance(val float64, dim int) float64 // Distance to an hyperplane in dimension dim
+	Equal(point Point) bool                     // Point comparison
 }
 
 // KdTree implements the k-d tree structure
@@ -71,7 +71,7 @@ func (k *KdTree) Insert(pts ...Point) {
 func (k *KdTree) insert(p Point) {
 	targetNode := &k.rightChild
 
-	if reflect.DeepEqual(k.points[0], p) {
+	if k.points[0].Equal(p) {
 		k.points = append(k.points, p)
 	}
 	if p.Val(k.axis) < k.points[0].Val(k.axis) {

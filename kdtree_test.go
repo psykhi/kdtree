@@ -3,11 +3,16 @@ package kdtree
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
 type point struct {
 	vals []float64
+}
+
+func (p *point) Equal(point Point) bool {
+	return reflect.DeepEqual(p, point)
 }
 
 func (p *point) PlaneDistance(val float64, i int) float64 {
