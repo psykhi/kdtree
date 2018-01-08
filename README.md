@@ -12,7 +12,7 @@ tree := NewKdTree([]Point{
 		&point{[]float64{7, 2}},
 		&point{[]float64{8, 1}},
 		&point{[]float64{9, 6}},
-	}, 0)
+	})
 
 // Insert a new value
 tree.Insert(&point{[]float64{2, 3}})

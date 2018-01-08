@@ -33,8 +33,12 @@ func (a byIthDim) Len() int           { return len(a.points) }
 func (a byIthDim) Swap(i, j int)      { a.points[i], a.points[j] = a.points[j], a.points[i] }
 func (a byIthDim) Less(i, j int) bool { return a.points[i].Val(a.dim) < a.points[j].Val(a.dim) }
 
+func NewKdTree(points []Point) *KdTree {
+	return newKdTree(points, 0)
+}
+
 // Returns a new k-d tree.
-func NewKdTree(points []Point, depth int) *KdTree {
+func newKdTree(points []Point, depth int) *KdTree {
 	if len(points) == 0 {
 		return nil
 	}
@@ -75,8 +79,8 @@ func NewKdTree(points []Point, depth int) *KdTree {
 	}
 
 	return &KdTree{
-		NewKdTree(points[:beforeMedian], depth+1),
-		NewKdTree(points[afterMedian+1:], depth+1),
+		newKdTree(points[:beforeMedian], depth+1),
+		newKdTree(points[afterMedian+1:], depth+1),
 		medianPoints,
 		axis,
 		depth,
@@ -100,7 +104,7 @@ func (k *KdTree) insert(p Point) {
 		targetNode = &k.leftChild
 	}
 	if *targetNode == nil {
-		*targetNode = NewKdTree([]Point{p}, k.depth)
+		*targetNode = newKdTree([]Point{p}, k.depth)
 		return
 	}
 	(*targetNode).Insert(p)

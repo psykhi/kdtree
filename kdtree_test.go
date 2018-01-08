@@ -53,14 +53,12 @@ func TestKdTree_New(t *testing.T) {
 		&point{[]float64{7, 2}},
 		&point{[]float64{8, 1}},
 		&point{[]float64{9, 6}},
-	}, 0)
+	})
 	assert.Equal(t, "([[7 2] [7 2]], (([[5 4]], (([[2 3]], (none, none)), ([[4 7]], (none, none)))), ([[9 6]], (([[8 1]], (none, none)), none))))", tree.String())
 }
 
 func TestKdTree_Insert(t *testing.T) {
-	tree := NewKdTree([]Point{
-		&point{[]float64{7, 2}},
-	}, 0)
+	tree := NewKdTree([]Point{&point{[]float64{7, 2}}})
 	assert.Equal(t, "([[7 2]], (none, none))", tree.String())
 
 	tree.Insert(&point{[]float64{5, 4}})
@@ -82,7 +80,7 @@ func TestKdTree_NN(t *testing.T) {
 		&point{[]float64{7, 2}},
 		&point{[]float64{8, 1}},
 		&point{[]float64{9, 6}},
-	}, 0)
+	})
 	assert.EqualValues(t, &point{[]float64{5, 4}}, tree.NN(&point{[]float64{5, 5}})[0])
 	assert.EqualValues(t, &point{[]float64{7, 2}}, tree.NN(&point{[]float64{8, 4}})[0])
 
