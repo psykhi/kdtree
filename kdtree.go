@@ -82,7 +82,6 @@ func (k *KdTree) insert(p Point) {
 }
 
 func (k *KdTree) NN(p Point) []Point {
-
 	smallestDistance := k.points[0].Distance(p)
 	nn := k
 
@@ -92,8 +91,9 @@ func (k *KdTree) NN(p Point) []Point {
 			smallestDistance = k.leftChild.points[0].Distance(p)
 			nn, smallestDistance = k.leftChild.nn(p, smallestDistance, k.leftChild)
 		}
+
 		// Check if we should look in the other leaf by seeing if the hypersphere centered in p of radius smalledDistance
-		// intersects with the hyperplane
+		// intersects with the hyperplane. If so it means we must look in the leaf.
 		if k.rightChild != nil {
 			if k.rightChild.points[0].PlaneDistance(nn.points[0].Val(k.axis), k.axis) < smallestDistance {
 
@@ -104,7 +104,6 @@ func (k *KdTree) NN(p Point) []Point {
 			}
 		}
 	}
-
 	return nn.points
 }
 
