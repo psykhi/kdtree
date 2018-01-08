@@ -8,13 +8,14 @@ import (
 )
 
 type Point interface {
-	DimCount() int
-	Val(int) float64
-	String() string
-	Distance(Point) float64
-	PlaneDistance(float64, int) float64
+	DimCount() int                              // Dimension count in the vectors
+	Val(i int) float64                          // Retrieve value in dimension i
+	String() string                             // String representation of the point
+	Distance(Point) float64                     // Distance to another point
+	PlaneDistance(val float64, dim int) float64 // Distance to an hyperplane in dimension dim
 }
 
+// KdTree implements the k-d tree structure
 type KdTree struct {
 	leftChild  *KdTree
 	rightChild *KdTree
@@ -23,15 +24,16 @@ type KdTree struct {
 	depth      int
 }
 
-type ByIthDim struct {
+type byIthDim struct {
 	points []Point
 	dim    int
 }
 
-func (a ByIthDim) Len() int           { return len(a.points) }
-func (a ByIthDim) Swap(i, j int)      { a.points[i], a.points[j] = a.points[j], a.points[i] }
-func (a ByIthDim) Less(i, j int) bool { return a.points[i].Val(a.dim) < a.points[j].Val(a.dim) }
+func (a byIthDim) Len() int           { return len(a.points) }
+func (a byIthDim) Swap(i, j int)      { a.points[i], a.points[j] = a.points[j], a.points[i] }
+func (a byIthDim) Less(i, j int) bool { return a.points[i].Val(a.dim) < a.points[j].Val(a.dim) }
 
+// Returns a new k-d tree.
 func NewKdTree(points []Point, depth int) *KdTree {
 	if len(points) == 0 {
 		return nil
@@ -46,7 +48,7 @@ func NewKdTree(points []Point, depth int) *KdTree {
 	}
 
 	// Find the median point
-	d := ByIthDim{points, axis}
+	d := byIthDim{points, axis}
 	sort.Sort(d)
 
 	medianPoint := points[len(points)/2]
@@ -59,6 +61,7 @@ func NewKdTree(points []Point, depth int) *KdTree {
 	}
 }
 
+// Insert points in the k-d tree. The tree might become unbalanced
 func (k *KdTree) Insert(pts ...Point) {
 	for _, p := range pts {
 		k.insert(p)
@@ -81,6 +84,7 @@ func (k *KdTree) insert(p Point) {
 	(*targetNode).Insert(p)
 }
 
+// Find the nearest neighboring node
 func (k *KdTree) NN(p Point) []Point {
 	smallestDistance := k.points[0].Distance(p)
 	nn := k
@@ -132,6 +136,7 @@ func (k *KdTree) nn(p Point, smallestDistance float64, nNode *KdTree) (*KdTree, 
 	return nn, smallestDistance
 }
 
+// Pretty print the tree
 func (k *KdTree) String() string {
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("(%v", k.points))
