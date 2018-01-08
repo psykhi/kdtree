@@ -47,15 +47,37 @@ func NewKdTree(points []Point, depth int) *KdTree {
 		}
 	}
 
-	// Find the median point
+	// Find the median points
 	d := byIthDim{points, axis}
 	sort.Sort(d)
-
 	medianPoint := points[len(points)/2]
+	medianPoints := make([]Point, 0)
+	medianPoints = append(medianPoints, medianPoint)
+	i := 1
+	j := 1
+	beforeMedian := len(points) / 2
+	afterMedian := len(points) / 2
+	for i > 0 && j > 0 && len(points)/2+i < len(points) && len(points)/2-j >= 0 {
+		if points[len(points)/2+i].Equal(medianPoint) {
+			medianPoints = append(medianPoints, points[len(points)/2+i])
+			afterMedian = len(points)/2 + i
+			i++
+		} else {
+			i = -1
+		}
+		if points[len(points)/2-j].Equal(medianPoint) {
+			medianPoints = append(medianPoints, points[len(points)/2-j])
+			beforeMedian = len(points)/2 - j
+			j++
+		} else {
+			j = -1
+		}
+	}
+
 	return &KdTree{
-		NewKdTree(points[:len(points)/2], depth+1),
-		NewKdTree(points[len(points)/2+1:], depth+1),
-		[]Point{medianPoint},
+		NewKdTree(points[:beforeMedian], depth+1),
+		NewKdTree(points[afterMedian+1:], depth+1),
+		medianPoints,
 		axis,
 		depth,
 	}
