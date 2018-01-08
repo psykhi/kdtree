@@ -3,6 +3,7 @@ package kdtree
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"sort"
 )
 
@@ -10,6 +11,8 @@ type Point interface {
 	DimCount() int
 	Val(int) float64
 	String() string
+	Distance(Point) float64
+	PlaneDistance(float64, int) float64
 }
 
 type KdTree struct {
@@ -64,7 +67,10 @@ func (k *KdTree) Insert(pts ...Point) {
 
 func (k *KdTree) insert(p Point) {
 	targetNode := &k.rightChild
-	// TODO find an exisiting point?
+
+	if reflect.DeepEqual(k.points[0], p) {
+		k.points = append(k.points, p)
+	}
 	if p.Val(k.axis) < k.points[0].Val(k.axis) {
 		targetNode = &k.leftChild
 	}
@@ -73,6 +79,58 @@ func (k *KdTree) insert(p Point) {
 		return
 	}
 	(*targetNode).Insert(p)
+}
+
+func (k *KdTree) NN(p Point) Point {
+
+	smallestDistance := k.points[0].Distance(p)
+	nn := k
+
+	// Examine children
+	if k.leftChild != nil {
+		if k.leftChild.points[0].Distance(p) < smallestDistance {
+			smallestDistance = k.leftChild.points[0].Distance(p)
+			nn, smallestDistance = k.leftChild.nn(p, smallestDistance, k.leftChild)
+		}
+		// Check if we should look in the other leaf by seeing if the hypersphere centered in p of radius smalledDistance
+		// intersects with the hyperplane
+		if k.rightChild != nil {
+			if k.rightChild.points[0].PlaneDistance(nn.points[0].Val(k.axis), k.axis) < smallestDistance {
+
+				nnRightLeaf, d := k.rightChild.nn(p, smallestDistance, nn)
+				if d < smallestDistance {
+					nn = nnRightLeaf
+				}
+			}
+		}
+	}
+
+	return nn.points[0]
+}
+
+func (k *KdTree) nn(p Point, smallestDistance float64, nNode *KdTree) (*KdTree, float64) {
+
+	nn := nNode
+
+	// Examine children
+	if k.leftChild != nil {
+		if k.leftChild.points[0].Distance(p) < smallestDistance {
+			smallestDistance = k.leftChild.points[0].Distance(p)
+			nn, smallestDistance = k.leftChild.nn(p, smallestDistance, k.leftChild)
+		}
+		// Check if we should look in the other leaf by seeing if the hypersphere centered in p of radius smalledDistance
+		// intersects with the hyperplane
+		if k.rightChild != nil {
+			if k.rightChild.points[0].PlaneDistance(nn.points[0].Val(k.axis), k.axis) < smallestDistance {
+				nnRightLeaf, d := k.rightChild.nn(p, smallestDistance, nn)
+				if d < smallestDistance {
+					nn = nnRightLeaf
+				}
+			}
+		}
+	}
+
+	return nn, smallestDistance
 }
 
 func (k *KdTree) String() string {
