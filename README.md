@@ -15,8 +15,7 @@ tree := NewKdTree([]Point{
 	}, 0)
 
 // Insert a new value
-tree.Insert(
-		&point{[]float64{2, 3}})
+tree.Insert(&point{[]float64{2, 3}})
 
 // Find the nearest neighbor node
 nn := tree.NN(&point{[]float64{2, 4}}
