@@ -3,6 +3,7 @@ package kdtree
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"math/rand"
 	"reflect"
 	"testing"
 )
@@ -18,7 +19,7 @@ func (p *point) Equal(point Point) bool {
 func (p *point) PlaneDistance(val float64, i int) float64 {
 	tmp := p.vals[i] - val
 	ret := tmp * tmp
-	fmt.Printf("%v <==> %v dim %d = %f\n", p, val, i, ret)
+	//fmt.Printf("%v <==> %v dim %d = %f\n", p, val, i, ret)
 	return ret
 }
 
@@ -28,7 +29,7 @@ func (p *point) Distance(a Point) float64 {
 		tmp := p.vals[i] - a.Val(i)
 		ret += tmp * tmp
 	}
-	fmt.Printf("%v <==> %v =%f\n", p, a, ret)
+	//fmt.Printf("%v <==> %v =%f\n", p, a, ret)
 	return ret
 }
 
@@ -127,4 +128,44 @@ func TestKdTree_NN(t *testing.T) {
 		})
 		assert.EqualValues(t, &point{[]float64{0, 1, 4}}, tree.NN(&point{[]float64{0, 1, 4}})[0])
 	})
+}
+
+func BenchmarkKdTree_NN(b *testing.B) {
+	b.Run("10 elements in tree", func(b *testing.B) {
+		bench(b, 10)
+	})
+	b.Run("100 elements in tree", func(b *testing.B) {
+		bench(b, 100)
+	})
+	b.Run("1000 elements in tree", func(b *testing.B) {
+		bench(b, 1000)
+	})
+	b.Run("10000 elements in tree", func(b *testing.B) {
+		bench(b, 10000)
+	})
+	b.Run("100000 elements in tree", func(b *testing.B) {
+		bench(b, 100000)
+	})
+}
+func bench(b *testing.B, count int) {
+
+	pts := make([]Point, 0)
+	for i := 0; i < count; i++ {
+		randP := make([]float64, 10)
+		for j := 0; j < 10; j++ {
+			randP[j] = rand.Float64()
+		}
+		pts = append(pts, &point{randP})
+	}
+	tree := NewKdTree(pts)
+	b.ReportAllocs()
+	randP := make([]float64, 10)
+	for j := 0; j < 10; j++ {
+		randP[j] = rand.Float64()
+	}
+	p := &point{randP}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tree.NN(p)
+	}
 }
