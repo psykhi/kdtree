@@ -69,24 +69,62 @@ func TestKdTree_Insert(t *testing.T) {
 		&point{[]float64{8, 1}},
 		&point{[]float64{8, 1}},
 		&point{[]float64{4, 7}})
-	assert.Equal(t, "([[7 2]], (([[5 4]], (([[2 3]], (none, ([[4 7]], (none, none)))), none)), ([[9 6]], (([[8 1] [8 1]], (none, ([[8 1]], (none, none)))), none))))", tree.String())
+	assert.Equal(t, "([[7 2]], (([[5 4]], (([[2 3]], (none, ([[4 7]], (none, none)))), none)), ([[9 6]], (([[8 1] [8 1]], (none, none)), none))))", tree.String())
 }
 
 func TestKdTree_NN(t *testing.T) {
-	tree := NewKdTree([]Point{
-		&point{[]float64{2, 3}},
-		&point{[]float64{4, 7}},
-		&point{[]float64{5, 4}},
-		&point{[]float64{7, 2}},
-		&point{[]float64{8, 1}},
-		&point{[]float64{9, 6}},
-	})
-	assert.EqualValues(t, &point{[]float64{5, 4}}, tree.NN(&point{[]float64{5, 5}})[0])
-	assert.EqualValues(t, &point{[]float64{7, 2}}, tree.NN(&point{[]float64{8, 4}})[0])
+	t.Run("Simple case ", func(t *testing.T) {
+		tree := NewKdTree([]Point{
+			&point{[]float64{2, 3}},
+			&point{[]float64{4, 7}},
+			&point{[]float64{5, 4}},
+			&point{[]float64{7, 2}},
+			&point{[]float64{8, 1}},
+			&point{[]float64{9, 6}},
+		})
+		assert.EqualValues(t, &point{[]float64{5, 4}}, tree.NN(&point{[]float64{5, 5}})[0])
+		assert.EqualValues(t, &point{[]float64{7, 2}}, tree.NN(&point{[]float64{8, 4}})[0])
 
-	// Insert another point already in there
-	tree.Insert(
-		&point{[]float64{2, 3}})
-	assert.EqualValues(t, &point{[]float64{2, 3}}, tree.NN(&point{[]float64{2, 4}})[0])
-	assert.EqualValues(t, &point{[]float64{2, 3}}, tree.NN(&point{[]float64{2, 4}})[1])
+		// Insert another point already in there
+		tree.Insert(
+			&point{[]float64{2, 3}})
+		assert.EqualValues(t, &point{[]float64{2, 3}}, tree.NN(&point{[]float64{2, 4}})[0])
+		assert.EqualValues(t, &point{[]float64{2, 3}}, tree.NN(&point{[]float64{2, 4}})[1])
+	})
+	t.Run("Multiple values on median", func(t *testing.T) {
+		tree := NewKdTree([]Point{
+			&point{[]float64{1, 0, 7, 22}},
+			&point{[]float64{0, 2, 5, 27}},
+			&point{[]float64{0, 0, 2, 9}},
+			&point{[]float64{0, 1, 3, 11}}, // swap a
+			&point{[]float64{0, 1, 3, 8}},  // swap b
+			&point{[]float64{2, 0, 0, 12}},
+		})
+		assert.EqualValues(t, &point{[]float64{0, 0, 2, 9}}, tree.NN(&point{[]float64{0, 0, 2, 9}})[0])
+	})
+	t.Run("Multiple values on median 2", func(t *testing.T) {
+		tree := NewKdTree([]Point{
+			&point{[]float64{1, 0, 7}},
+			&point{[]float64{0, 2, 5}},
+			&point{[]float64{0, 0, 2}},
+			&point{[]float64{0, 1, 3}}, // swap b
+			&point{[]float64{0, 1, 4}}, // swap a
+			&point{[]float64{2, 0, 0}},
+		})
+		assert.EqualValues(t, &point{[]float64{0, 0, 2}}, tree.NN(&point{[]float64{0, 0, 2}})[0])
+	})
+	t.Run("Multiple values on median case 3", func(t *testing.T) {
+		tree := NewKdTree([]Point{
+			&point{[]float64{1, 0, 7}},
+			&point{[]float64{0, 2, 5}},
+			&point{[]float64{0, 0, 2}},
+			&point{[]float64{0, 0, 2}},
+			&point{[]float64{0, 0, 2}},
+			&point{[]float64{0, 0, 3}},
+			&point{[]float64{0, 1, 3}}, // swap b
+			&point{[]float64{0, 1, 4}}, // swap a
+			&point{[]float64{2, 0, 0}},
+		})
+		assert.EqualValues(t, &point{[]float64{0, 1, 4}}, tree.NN(&point{[]float64{0, 1, 4}})[0])
+	})
 }

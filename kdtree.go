@@ -3,6 +3,7 @@ package kdtree
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"sort"
 )
 
@@ -56,31 +57,28 @@ func newKdTree(points []Point, depth int) *KdTree {
 	sort.Sort(d)
 	medianPoint := points[len(points)/2]
 	medianPoints := make([]Point, 0)
-	medianPoints = append(medianPoints, medianPoint)
-	i := 1
-	j := 1
-	beforeMedian := len(points) / 2
-	afterMedian := len(points) / 2
-	for i > 0 && j > 0 && len(points)/2+i < len(points) && len(points)/2-j >= 0 {
-		if points[len(points)/2+i].Equal(medianPoint) {
-			medianPoints = append(medianPoints, points[len(points)/2+i])
-			afterMedian = len(points)/2 + i
-			i++
-		} else {
-			i = -1
+
+	beforePoints := make([]Point, 0)
+	afterPoints := make([]Point, 0)
+	splittingValue := medianPoint.Val(axis)
+
+	for i := 0; i < len(points); i++ {
+		if points[i].Equal(medianPoint) {
+			medianPoints = append(medianPoints, points[i])
+			continue
 		}
-		if points[len(points)/2-j].Equal(medianPoint) {
-			medianPoints = append(medianPoints, points[len(points)/2-j])
-			beforeMedian = len(points)/2 - j
-			j++
-		} else {
-			j = -1
+
+		if points[i].Val(axis) <= splittingValue {
+			beforePoints = append(beforePoints, points[i])
+			continue
 		}
+
+		afterPoints = append(afterPoints, points[i])
 	}
 
 	return &KdTree{
-		newKdTree(points[:beforeMedian], depth+1),
-		newKdTree(points[afterMedian+1:], depth+1),
+		newKdTree(beforePoints, depth+1),
+		newKdTree(afterPoints, depth+1),
 		medianPoints,
 		axis,
 		depth,
@@ -99,62 +97,57 @@ func (k *KdTree) insert(p Point) {
 
 	if k.points[0].Equal(p) {
 		k.points = append(k.points, p)
+		return
 	}
-	if p.Val(k.axis) < k.points[0].Val(k.axis) {
+	if p.Val(k.axis) <= k.points[0].Val(k.axis) {
 		targetNode = &k.leftChild
 	}
 	if *targetNode == nil {
 		*targetNode = newKdTree([]Point{p}, k.depth)
 		return
 	}
-	(*targetNode).Insert(p)
+	(*targetNode).insert(p)
 }
 
 // Find the nearest neighboring node
 func (k *KdTree) NN(p Point) []Point {
-	smallestDistance := k.points[0].Distance(p)
-	nn := k
-
-	// Examine children
-	if k.leftChild != nil {
-		if k.leftChild.points[0].Distance(p) < smallestDistance {
-			smallestDistance = k.leftChild.points[0].Distance(p)
-			nn, smallestDistance = k.leftChild.nn(p, smallestDistance, k.leftChild)
-		}
-
-		// Check if we should look in the other leaf by seeing if the hypersphere centered in p of radius smalledDistance
-		// intersects with the hyperplane. If so it means we must look in the leaf.
-		if k.rightChild != nil {
-			if k.rightChild.points[0].PlaneDistance(nn.points[0].Val(k.axis), k.axis) < smallestDistance {
-
-				nnRightLeaf, d := k.rightChild.nn(p, smallestDistance, nn)
-				if d < smallestDistance {
-					nn = nnRightLeaf
-				}
-			}
-		}
-	}
-	return nn.points
+	pts, _ := k.nn(p, math.MaxFloat64, k)
+	return pts.points
 }
 
 func (k *KdTree) nn(p Point, smallestDistance float64, nNode *KdTree) (*KdTree, float64) {
 
 	nn := nNode
+	d := k.points[0].Distance(p)
+	if d < smallestDistance {
+		nn = k
+		smallestDistance = d
+	}
+
+	// Find where to look first
+	targetNode := k.leftChild
+	otherSideOfPlandeNode := k.rightChild
+	if p.Val(k.axis) > k.points[0].Val(k.axis) {
+		targetNode = k.rightChild
+		otherSideOfPlandeNode = k.leftChild
+	}
 
 	// Examine children
-	if k.leftChild != nil {
-		if k.leftChild.points[0].Distance(p) < smallestDistance {
-			smallestDistance = k.leftChild.points[0].Distance(p)
-			nn, smallestDistance = k.leftChild.nn(p, smallestDistance, k.leftChild)
+	if targetNode != nil {
+		nnLeftLeaf, d := targetNode.nn(p, smallestDistance, nn)
+		if d < smallestDistance {
+			nn = nnLeftLeaf
+			smallestDistance = d
 		}
-		// Check if we should look in the other leaf by seeing if the hypersphere centered in p of radius smalledDistance
-		// intersects with the hyperplane
-		if k.rightChild != nil {
-			if k.rightChild.points[0].PlaneDistance(nn.points[0].Val(k.axis), k.axis) < smallestDistance {
-				nnRightLeaf, d := k.rightChild.nn(p, smallestDistance, nn)
-				if d < smallestDistance {
-					nn = nnRightLeaf
-				}
+	}
+	// Check if we should look in the other leaf by seeing if the hypersphere centered in p of radius smalledDistance
+	// intersects with the hyperplane
+	if otherSideOfPlandeNode != nil {
+		if k.points[0].PlaneDistance(p.Val(k.axis), k.axis) <= smallestDistance {
+			nnRightLeaf, d := otherSideOfPlandeNode.nn(p, smallestDistance, nn)
+			if d < smallestDistance {
+				nn = nnRightLeaf
+				smallestDistance = d
 			}
 		}
 	}
