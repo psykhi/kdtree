@@ -3,6 +3,7 @@ package kdtree
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"math"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -59,18 +60,54 @@ func TestKdTree_New(t *testing.T) {
 }
 
 func TestKdTree_Insert(t *testing.T) {
-	tree := NewKdTree([]Point{&point{[]float64{7, 2}}})
-	assert.Equal(t, "([[7 2]], (none, none))", tree.String())
+	t.Run("simple", func(t *testing.T) {
+		tree := NewKdTree([]Point{&point{[]float64{7, 2}}})
+		assert.Equal(t, "([[7 2]], (none, none))", tree.String())
 
-	tree.Insert(&point{[]float64{5, 4}})
-	assert.Equal(t, "([[7 2]], (([[5 4]], (none, none)), none))", tree.String())
-	tree.Insert(
-		&point{[]float64{2, 3}},
-		&point{[]float64{9, 6}},
-		&point{[]float64{8, 1}},
-		&point{[]float64{8, 1}},
-		&point{[]float64{4, 7}})
-	assert.Equal(t, "([[7 2]], (([[5 4]], (([[2 3]], (none, ([[4 7]], (none, none)))), none)), ([[9 6]], (([[8 1] [8 1]], (none, none)), none))))", tree.String())
+		tree = tree.Insert(&point{[]float64{5, 4}})
+		assert.Equal(t, "([[7 2]], (([[5 4]], (none, none)), none))", tree.String())
+		tree = tree.Insert(
+			&point{[]float64{2, 3}},
+			&point{[]float64{9, 6}},
+			&point{[]float64{8, 1}},
+			&point{[]float64{8, 1}},
+			&point{[]float64{4, 7}})
+		assert.Equal(t, "([[7 2]], (([[5 4]], (([[2 3]], (none, ([[4 7]], (none, none)))), none)), ([[9 6]], (([[8 1] [8 1]], (none, none)), none))))", tree.String())
+	})
+	t.Run("random data", func(t *testing.T) {
+		tree := NewKdTree([]Point{&point{[]float64{rand.Float64(), rand.Float64()}}})
+		for i := 0; i < 10000; i++ {
+			tree = tree.Insert(&point{[]float64{rand.Float64(), rand.Float64()}})
+		}
+		d := tree.NN(&point{[]float64{0.7, 0.28}})[0]
+		assert.True(t, math.Abs(d.(*point).vals[0]-0.7) < 0.1)
+		assert.True(t, math.Abs(d.(*point).vals[1]-0.28) < 0.1)
+	})
+	t.Run("insert line", func(t *testing.T) {
+		tree := NewKdTree([]Point{&point{[]float64{7, 2}}})
+		for i := 0; i < 100; i++ {
+			tree = tree.Insert(&point{vals: []float64{float64(i), float64(i)}})
+			fmt.Println("after", tree)
+		}
+		assert.EqualValues(t, &point{[]float64{7, 7}}, tree.NN(&point{[]float64{7, 8}})[0])
+	})
+	t.Run("insert same values", func(t *testing.T) {
+		tree := NewKdTree([]Point{
+			&point{[]float64{1, 0, 7}},
+		})
+		tree = tree.Insert(
+			&point{[]float64{0, 2, 5}},
+			&point{[]float64{0, 0, 2}},
+			&point{[]float64{0, 0, 2}},
+			&point{[]float64{0, 0, 2}},
+			&point{[]float64{0, 0, 3}},
+			&point{[]float64{0, 1, 3}}, // swap b
+			&point{[]float64{0, 1, 4}}, // swap a
+			&point{[]float64{2, 0, 0}},
+		)
+		assert.EqualValues(t, &point{[]float64{0, 1, 4}}, tree.NN(&point{[]float64{0, 1, 4}})[0])
+	})
+
 }
 
 func TestKdTree_NN(t *testing.T) {
@@ -87,7 +124,7 @@ func TestKdTree_NN(t *testing.T) {
 		assert.EqualValues(t, &point{[]float64{7, 2}}, tree.NN(&point{[]float64{8, 4}})[0])
 
 		// Insert another point already in there
-		tree.Insert(
+		tree = tree.Insert(
 			&point{[]float64{2, 3}})
 		assert.EqualValues(t, &point{[]float64{2, 3}}, tree.NN(&point{[]float64{2, 4}})[0])
 		assert.EqualValues(t, &point{[]float64{2, 3}}, tree.NN(&point{[]float64{2, 4}})[1])

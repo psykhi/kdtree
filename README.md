@@ -1,6 +1,6 @@
 # k-d trees in Golang
 
-This package provides a simple implementation of k-d trees in Go.
+This package provides a simple implementation of self-balanced k-d trees in Go.
 
 Usage:
 ```go
@@ -14,8 +14,8 @@ tree := NewKdTree([]Point{
 		&point{[]float64{9, 6}},
 	})
 
-// Insert a new value
-tree.Insert(&point{[]float64{2, 3}})
+// Insert a new value. 
+tree = tree.Insert(&point{[]float64{2, 3}})
 
 // Find the nearest neighbor node
 nn := tree.NN(&point{[]float64{2, 4}}

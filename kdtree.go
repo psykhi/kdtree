@@ -23,6 +23,7 @@ type KdTree struct {
 	points     []Point
 	axis       int
 	depth      int
+	h          int
 }
 
 type byIthDim struct {
@@ -49,6 +50,7 @@ func newKdTree(points []Point, depth int) *KdTree {
 			points: points,
 			axis:   axis,
 			depth:  depth,
+			h:      0,
 		}
 	}
 
@@ -76,37 +78,101 @@ func newKdTree(points []Point, depth int) *KdTree {
 		afterPoints = append(afterPoints, points[i])
 	}
 
+	leftChild := newKdTree(beforePoints, depth+1)
+	rightChild := newKdTree(afterPoints, depth+1)
+	height := 0
+	if leftChild != nil {
+		height = leftChild.h
+	}
+	if rightChild != nil {
+		if rightChild.h > height {
+			height = rightChild.h
+		}
+	}
+
 	return &KdTree{
-		newKdTree(beforePoints, depth+1),
-		newKdTree(afterPoints, depth+1),
-		medianPoints,
-		axis,
-		depth,
+		leftChild:  leftChild,
+		rightChild: rightChild,
+		points:     medianPoints,
+		axis:       axis,
+		depth:      depth,
+		h:          height,
 	}
 }
 
 // Insert points in the k-d tree. The tree might become unbalanced
-func (k *KdTree) Insert(pts ...Point) {
+func (k *KdTree) Insert(pts ...Point) *KdTree {
 	for _, p := range pts {
-		k.insert(p)
+		k = k.insert(p)
 	}
+	return k
 }
 
-func (k *KdTree) insert(p Point) {
+func (k *KdTree) height() int {
+	if k == nil {
+		return 0
+	}
+	return k.h
+}
+
+func (k *KdTree) insert(p Point) *KdTree {
 	targetNode := &k.rightChild
 
 	if k.points[0].Equal(p) {
 		k.points = append(k.points, p)
-		return
+		return k
 	}
 	if p.Val(k.axis) <= k.points[0].Val(k.axis) {
 		targetNode = &k.leftChild
 	}
 	if *targetNode == nil {
+		if k.leftChild == nil && k.rightChild == nil {
+			k.h++
+		}
 		*targetNode = newKdTree([]Point{p}, k.depth)
-		return
+		return k
 	}
-	(*targetNode).insert(p)
+
+	*targetNode = (*targetNode).insert(p)
+
+	k.h = k.ChildrenHeight() + 1
+	return k.balance()
+}
+
+func doBalance(k *KdTree) *KdTree {
+	// Left rotation
+	if k.leftChild.height() < k.rightChild.height() {
+		root := *k.rightChild
+		k.rightChild = root.leftChild
+		root.leftChild = k
+		k.h--
+		return &root
+	}
+	// Right rotation
+	root := *k.leftChild
+	k.leftChild = root.rightChild
+	root.rightChild = k
+	k.h--
+	return &root
+}
+
+func (k *KdTree) balance() *KdTree {
+	if !k.needsRebalance() {
+		return k
+	}
+	return doBalance(k)
+}
+
+func (k *KdTree) needsRebalance() bool {
+	return math.Abs(float64(k.rightChild.height()-k.leftChild.height())) >= 2
+}
+
+func (k *KdTree) ChildrenHeight() int {
+	h := k.leftChild.height()
+	if k.rightChild.height() > h {
+		return k.rightChild.height()
+	}
+	return h
 }
 
 // Find the nearest neighboring node
@@ -116,7 +182,6 @@ func (k *KdTree) NN(p Point) []Point {
 }
 
 func (k *KdTree) nn(p Point, smallestDistance float64, nNode *KdTree) (*KdTree, float64) {
-
 	nn := nNode
 	d := k.points[0].Distance(p)
 	if d < smallestDistance {
